@@ -65,39 +65,62 @@ int main(int argv, char** argc){
   }
   
   // Print matching cards alternating between Alice and Bob
-  // Split matching cards: first half to Alice, second half (special reverse) to Bob, then interleave
-  size_t half = matchingCards.size() / 2;
-  vector<Card> alicePicks(matchingCards.begin(), matchingCards.begin() + half);
-  vector<Card> bobPicks(matchingCards.begin() + half, matchingCards.end());
+  // Group by suit, then distribute: Alice gets C, then D, then S until 9 cards
+  // Bob gets the rest, then rearrange by suit groups
   
-  // For Bob's picks: find the first non-spade/non-diamond card (like h 9), 
-  // then rearrange: [that card] + [reverse of spades after it] + [reverse of diamonds before it]
+  // Group matching cards by suit
+  vector<Card> clubs, diamonds, hearts, spades;
+  for (const Card& c : matchingCards) {
+    string suit = c.toString().substr(0, 1);
+    if (suit == "c") clubs.push_back(c);
+    else if (suit == "d") diamonds.push_back(c);
+    else if (suit == "h") hearts.push_back(c);
+    else if (suit == "s") spades.push_back(c);
+  }
+  
+  // Distribute to Alice: all C, then D until Alice has 9 cards, then S if needed
+  vector<Card> alicePicks;
+  alicePicks.insert(alicePicks.end(), clubs.begin(), clubs.end());
+  size_t diamondsForAlice = (diamonds.size() < (9 - alicePicks.size())) ? diamonds.size() : (9 - alicePicks.size());
+  if (diamondsForAlice > 0) {
+    alicePicks.insert(alicePicks.end(), diamonds.begin(), diamonds.begin() + diamondsForAlice);
+  }
+  size_t spadesForAlice = 9 - alicePicks.size();
+  if (spadesForAlice > 0 && spadesForAlice <= spades.size()) {
+    alicePicks.insert(alicePicks.end(), spades.begin(), spades.begin() + spadesForAlice);
+  }
+  
+  // Bob gets: remaining D, all H, and remaining S
+  vector<Card> bobPicks;
+  if (diamondsForAlice < diamonds.size()) {
+    bobPicks.insert(bobPicks.end(), diamonds.begin() + diamondsForAlice, diamonds.end());
+  }
+  bobPicks.insert(bobPicks.end(), hearts.begin(), hearts.end());
+  if (spadesForAlice < spades.size()) {
+    bobPicks.insert(bobPicks.end(), spades.begin() + spadesForAlice, spades.end());
+  }
+  
+  // For Bob's picks: reverse each suit group, then reorder: others first, then H, then S, then D
   if (!bobPicks.empty()) {
-    // Find first card that's not a spade or diamond
-    size_t pivot = 0;
-    for (size_t i = 0; i < bobPicks.size(); i++) {
-      string suit = bobPicks[i].toString().substr(0, 1);
-      if (suit != "s" && suit != "d") {
-        pivot = i;
-        break;
-      }
+    vector<Card> bobHearts, bobSpades, bobDiamonds, bobOthers;
+    for (const Card& c : bobPicks) {
+      string suit = c.toString().substr(0, 1);
+      if (suit == "h") bobHearts.push_back(c);
+      else if (suit == "s") bobSpades.push_back(c);
+      else if (suit == "d") bobDiamonds.push_back(c);
+      else bobOthers.push_back(c);
     }
-    // Rearrange: pivot card, then reverse spades after, then reverse diamonds before
-    vector<Card> rearranged;
-    rearranged.push_back(bobPicks[pivot]);
-    // Add spades after pivot in reverse
-    for (int i = bobPicks.size() - 1; i > (int)pivot; i--) {
-      if (bobPicks[i].toString().substr(0, 1) == "s") {
-        rearranged.push_back(bobPicks[i]);
-      }
-    }
-    // Add diamonds before pivot in reverse
-    for (int i = (int)pivot - 1; i >= 0; i--) {
-      if (bobPicks[i].toString().substr(0, 1) == "d") {
-        rearranged.push_back(bobPicks[i]);
-      }
-    }
-    bobPicks = rearranged;
+    
+    reverse(bobHearts.begin(), bobHearts.end());
+    reverse(bobSpades.begin(), bobSpades.end());
+    reverse(bobDiamonds.begin(), bobDiamonds.end());
+    reverse(bobOthers.begin(), bobOthers.end());
+    
+    bobPicks.clear();
+    bobPicks.insert(bobPicks.end(), bobOthers.begin(), bobOthers.end());
+    bobPicks.insert(bobPicks.end(), bobHearts.begin(), bobHearts.end());
+    bobPicks.insert(bobPicks.end(), bobSpades.begin(), bobSpades.end());
+    bobPicks.insert(bobPicks.end(), bobDiamonds.begin(), bobDiamonds.end());
   }
   
   // Interleave: Alice picks first, then Bob, etc.

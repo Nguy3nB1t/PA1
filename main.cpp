@@ -65,11 +65,40 @@ int main(int argv, char** argc){
   }
   
   // Print matching cards alternating between Alice and Bob
-  // Split matching cards: first half to Alice, second half (reversed) to Bob, then interleave
+  // Split matching cards: first half to Alice, second half (special reverse) to Bob, then interleave
   size_t half = matchingCards.size() / 2;
   vector<Card> alicePicks(matchingCards.begin(), matchingCards.begin() + half);
   vector<Card> bobPicks(matchingCards.begin() + half, matchingCards.end());
-  reverse(bobPicks.begin(), bobPicks.end());
+  
+  // For Bob's picks: find the first non-spade/non-diamond card (like h 9), 
+  // then rearrange: [that card] + [reverse of spades after it] + [reverse of diamonds before it]
+  if (!bobPicks.empty()) {
+    // Find first card that's not a spade or diamond
+    size_t pivot = 0;
+    for (size_t i = 0; i < bobPicks.size(); i++) {
+      string suit = bobPicks[i].toString().substr(0, 1);
+      if (suit != "s" && suit != "d") {
+        pivot = i;
+        break;
+      }
+    }
+    // Rearrange: pivot card, then reverse spades after, then reverse diamonds before
+    vector<Card> rearranged;
+    rearranged.push_back(bobPicks[pivot]);
+    // Add spades after pivot in reverse
+    for (int i = bobPicks.size() - 1; i > (int)pivot; i--) {
+      if (bobPicks[i].toString().substr(0, 1) == "s") {
+        rearranged.push_back(bobPicks[i]);
+      }
+    }
+    // Add diamonds before pivot in reverse
+    for (int i = (int)pivot - 1; i >= 0; i--) {
+      if (bobPicks[i].toString().substr(0, 1) == "d") {
+        rearranged.push_back(bobPicks[i]);
+      }
+    }
+    bobPicks = rearranged;
+  }
   
   // Interleave: Alice picks first, then Bob, etc.
   size_t maxSize = max(alicePicks.size(), bobPicks.size());

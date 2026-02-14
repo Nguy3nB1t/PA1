@@ -52,8 +52,10 @@ int main(int argv, char** argc){
   
   // Game loop: Alice and Bob alternate turns
   // Alice finds first matching card (smallest in her hand), Bob finds last matching card (largest in his hand)
+  // Same game logic but with our custom BST - no std::set cheating here 😤
   while (true) {
     // Alice's turn: find first matching card (iterate forward through her hand)
+    // She's methodical, going through cards one by one like a robot
     vector<Card> aliceCardVec;
     aliceCards.getCards(aliceCardVec);
     
@@ -63,41 +65,43 @@ int main(int argv, char** argc){
       if (bobCards.contains(card)) {
         aliceMatch = card;
         aliceFound = true;
-        break;
+        break; // Found one! Let's gooo
       }
     }
     
     if (!aliceFound) {
-      break; // No more matches
+      break; // No more matches - they're both out of luck
     }
     
     // Alice picks the matching card
     cout << "Alice picked matching card " << aliceMatch.toString() << endl;
     aliceCards.remove(aliceMatch);
-    bobCards.remove(aliceMatch);
+    bobCards.remove(aliceMatch); // Bob's card collection just got smaller 💀
     
     // Bob's turn: find last matching card (iterate backward through his hand)
+    // Bob's doing the reverse strategy - "biggest first, why not?"
     vector<Card> bobCardVec;
     bobCards.getCards(bobCardVec);
     
     Card bobMatch("", "");
     bool bobFound = false;
     // Iterate backward through Bob's cards (from largest to smallest)
+    // Going backwards like he's reading a book from the end
     for (int i = bobCardVec.size() - 1; i >= 0; i--) {
       if (aliceCards.contains(bobCardVec[i])) {
         bobMatch = bobCardVec[i];
         bobFound = true;
-        break;
+        break; // Score!
       }
     }
     
     if (!bobFound) {
-      break; // No more matches
+      break; // No more matches - this is getting boring
     }
     
     // Bob picks the matching card
     cout << "Bob picked matching card " << bobMatch.toString() << endl;
-    aliceCards.remove(bobMatch);
+    aliceCards.remove(bobMatch); // Alice loses that one
     bobCards.remove(bobMatch);
   }
   

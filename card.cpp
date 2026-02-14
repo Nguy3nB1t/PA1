@@ -19,7 +19,13 @@ string Card::toString() const {
 
 bool Card::operator<(const Card& other) const {
     if (suit != other.suit) {
-        return suit < other.suit;
+        // Suit order: clubs < diamonds < spades < hearts
+        string suitOrder = "cdsh";
+        size_t thisPos = suitOrder.find(suit);
+        size_t otherPos = suitOrder.find(other.suit);
+        if (thisPos == string::npos) thisPos = 999;
+        if (otherPos == string::npos) otherPos = 999;
+        return thisPos < otherPos;
     }
     // If suits are equal, compare ranks
     // Ace is treated as low (before 2)

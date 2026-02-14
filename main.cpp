@@ -50,94 +50,55 @@ int main(int argv, char** argc){
   }
   cardFile2.close();
   
-  // Find matching cards and print them
-  vector<Card> aliceCardVec;
-  aliceCards.getCards(aliceCardVec);
-  
-  vector<Card> bobCardVec;
-  bobCards.getCards(bobCardVec);
-  
-  vector<Card> matchingCards;
-  for (const Card& card : aliceCardVec) {
-    if (bobCards.contains(card)) {
-      matchingCards.push_back(card);
-    }
-  }
-  
-  // Print matching cards alternating between Alice and Bob
-  // Group by suit, then distribute: Alice gets C, then D, then S until 9 cards
-  // Bob gets the rest, then rearrange by suit groups
-  
-  // Group matching cards by suit
-  vector<Card> clubs, diamonds, hearts, spades;
-  for (const Card& c : matchingCards) {
-    string suit = c.toString().substr(0, 1);
-    if (suit == "c") clubs.push_back(c);
-    else if (suit == "d") diamonds.push_back(c);
-    else if (suit == "h") hearts.push_back(c);
-    else if (suit == "s") spades.push_back(c);
-  }
-  
-  // Distribute to Alice: all C, then D until Alice has 9 cards, then S if needed
-  vector<Card> alicePicks;
-  alicePicks.insert(alicePicks.end(), clubs.begin(), clubs.end());
-  size_t diamondsForAlice = (diamonds.size() < (9 - alicePicks.size())) ? diamonds.size() : (9 - alicePicks.size());
-  if (diamondsForAlice > 0) {
-    alicePicks.insert(alicePicks.end(), diamonds.begin(), diamonds.begin() + diamondsForAlice);
-  }
-  size_t spadesForAlice = 9 - alicePicks.size();
-  if (spadesForAlice > 0 && spadesForAlice <= spades.size()) {
-    alicePicks.insert(alicePicks.end(), spades.begin(), spades.begin() + spadesForAlice);
-  }
-  
-  // Bob gets: remaining D, all H, and remaining S
-  vector<Card> bobPicks;
-  if (diamondsForAlice < diamonds.size()) {
-    bobPicks.insert(bobPicks.end(), diamonds.begin() + diamondsForAlice, diamonds.end());
-  }
-  bobPicks.insert(bobPicks.end(), hearts.begin(), hearts.end());
-  if (spadesForAlice < spades.size()) {
-    bobPicks.insert(bobPicks.end(), spades.begin() + spadesForAlice, spades.end());
-  }
-  
-  // For Bob's picks: reverse each suit group, then reorder: others first, then H, then S, then D
-  if (!bobPicks.empty()) {
-    vector<Card> bobHearts, bobSpades, bobDiamonds, bobOthers;
-    for (const Card& c : bobPicks) {
-      string suit = c.toString().substr(0, 1);
-      if (suit == "h") bobHearts.push_back(c);
-      else if (suit == "s") bobSpades.push_back(c);
-      else if (suit == "d") bobDiamonds.push_back(c);
-      else bobOthers.push_back(c);
+  // Game loop: Alice and Bob alternate turns
+  // Alice finds first matching card (smallest in her hand), Bob finds last matching card (largest in his hand)
+  while (true) {
+    // Alice's turn: find first matching card (iterate forward through her hand)
+    vector<Card> aliceCardVec;
+    aliceCards.getCards(aliceCardVec);
+    
+    Card aliceMatch("", "");
+    bool aliceFound = false;
+    for (const Card& card : aliceCardVec) {
+      if (bobCards.contains(card)) {
+        aliceMatch = card;
+        aliceFound = true;
+        break;
+      }
     }
     
-    reverse(bobHearts.begin(), bobHearts.end());
-    reverse(bobSpades.begin(), bobSpades.end());
-    reverse(bobDiamonds.begin(), bobDiamonds.end());
-    reverse(bobOthers.begin(), bobOthers.end());
+    if (!aliceFound) {
+      break; // No more matches
+    }
     
-    bobPicks.clear();
-    bobPicks.insert(bobPicks.end(), bobOthers.begin(), bobOthers.end());
-    bobPicks.insert(bobPicks.end(), bobHearts.begin(), bobHearts.end());
-    bobPicks.insert(bobPicks.end(), bobSpades.begin(), bobSpades.end());
-    bobPicks.insert(bobPicks.end(), bobDiamonds.begin(), bobDiamonds.end());
-  }
-  
-  // Interleave: Alice picks first, then Bob, etc.
-  size_t maxSize = max(alicePicks.size(), bobPicks.size());
-  for (size_t i = 0; i < maxSize; i++) {
-    if (i < alicePicks.size()) {
-      cout << "Alice picked matching card " << alicePicks[i].toString() << endl;
+    // Alice picks the matching card
+    cout << "Alice picked matching card " << aliceMatch.toString() << endl;
+    aliceCards.remove(aliceMatch);
+    bobCards.remove(aliceMatch);
+    
+    // Bob's turn: find last matching card (iterate backward through his hand)
+    vector<Card> bobCardVec;
+    bobCards.getCards(bobCardVec);
+    
+    Card bobMatch("", "");
+    bool bobFound = false;
+    // Iterate backward through Bob's cards (from largest to smallest)
+    for (int i = bobCardVec.size() - 1; i >= 0; i--) {
+      if (aliceCards.contains(bobCardVec[i])) {
+        bobMatch = bobCardVec[i];
+        bobFound = true;
+        break;
+      }
     }
-    if (i < bobPicks.size()) {
-      cout << "Bob picked matching card " << bobPicks[i].toString() << endl;
+    
+    if (!bobFound) {
+      break; // No more matches
     }
-  }
-  
-  // Remove matching cards from both lists
-  for (const Card& card : matchingCards) {
-    aliceCards.remove(card);
-    bobCards.remove(card);
+    
+    // Bob picks the matching card
+    cout << "Bob picked matching card " << bobMatch.toString() << endl;
+    aliceCards.remove(bobMatch);
+    bobCards.remove(bobMatch);
   }
   
   // Print remaining cards
